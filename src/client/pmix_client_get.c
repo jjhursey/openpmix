@@ -402,7 +402,7 @@ static void _getnbfn(int fd, short flags, void *cbdata)
     pmix_cb_t *cb = (pmix_cb_t*)cbdata;
     pmix_cb_t *cbret;
     pmix_buffer_t *msg;
-    pmix_value_t *val;
+    pmix_value_t *val = NULL;
     pmix_info_t *info, *iptr;
     pmix_pointer_array_t results;
     pmix_status_t rc;

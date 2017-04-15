@@ -290,11 +290,19 @@ typedef struct {
 } pmix_job_data_caddy_t;
 PMIX_CLASS_DECLARATION(pmix_job_data_caddy_t);
 
+// JJH START
+#define MB()  __asm__ __volatile__ ("sync" : : : "memory")
+#define RMB() __asm__ __volatile__ ("lwsync" : : : "memory")
+#define WMB() __asm__ __volatile__ ("eieio" : : : "memory")
+// JJH END
+
 #define PMIX_THREADSHIFT(r, c)                       \
  do {                                                 \
     (r)->active = true;                               \
+    MB();                                             \
     event_assign(&((r)->ev), pmix_globals.evbase,     \
                  -1, EV_WRITE, (c), (r));             \
+    MB();                                             \
     event_active(&((r)->ev), EV_WRITE, 1);            \
 } while (0)
 
@@ -304,6 +312,7 @@ PMIX_CLASS_DECLARATION(pmix_job_data_caddy_t);
         while ((a)) {                           \
             usleep(10);                         \
         }                                       \
+        MB();                                   \
     } while (0)
 
 

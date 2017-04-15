@@ -61,6 +61,7 @@ static inline int _add_key_for_rank(int rank, pmix_kval_t *kv, void *cbdata)
             PMIX_ERROR_LOG(rc);
         }
     }
+    MB(); // JJH
     return rc;
 }
 

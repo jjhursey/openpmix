@@ -54,6 +54,7 @@ static void pmix_hash_table_construct(pmix_hash_table_t* ht)
     ht->ht_table = NULL;
     ht->ht_table_size = 0;
     ht->ht_size = 0;
+    pthread_mutex_init(&(ht)->lock, NULL);
 }
 
 
@@ -68,6 +69,7 @@ static void pmix_hash_table_destruct(pmix_hash_table_t* ht)
         free(ht->ht_table);
     }
     PMIX_DESTRUCT(&ht->ht_nodes);
+    pthread_mutex_destroy(&(ht)->lock);
 }
 
 

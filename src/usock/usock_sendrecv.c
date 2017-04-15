@@ -203,6 +203,9 @@ static pmix_status_t read_bytes(int sd, char **buf, size_t *remain)
                 ret = PMIX_ERR_WOULD_BLOCK;
                 goto exit;
             }
+            pmix_output(0, "JJH (%s:%d in %s()) Error condition (rc=%d -- PMIX_ERR_UNREACH... (A))",
+                        __FILE__, __LINE__, __FUNCTION__, rc);
+
             /* we hit an error and cannot progress this message - report
              * the error back to the RML and let the caller know
              * to abort this message
@@ -214,6 +217,8 @@ static pmix_status_t read_bytes(int sd, char **buf, size_t *remain)
             ret = PMIX_ERR_UNREACH;
             goto exit;
         } else if (0 == rc) {
+            pmix_output(0, "JJH (%s:%d in %s()) Error condition (rc=%d -- PMIX_ERR_UNREACH... (B))",
+                        __FILE__, __LINE__, __FUNCTION__, rc);
             /* the remote peer closed the connection */
             ret = PMIX_ERR_UNREACH;
             goto exit;
@@ -268,8 +273,13 @@ void pmix_usock_send_handler(int sd, short flags, void *cbdata)
                 /* exit this event and let the event lib progress */
                 pmix_output_verbose(2, pmix_globals.debug_output,
                                     "usock:send_handler RES BUSY OR WOULD BLOCK");
+                pmix_output(0, "JJH (%s:%d in %s()) Error condition (rc=%d %s)",
+                            __FILE__, __LINE__, __FUNCTION__, rc,
+                            (rc == PMIX_ERR_RESOURCE_BUSY ? "Busy" : "Block") );
                 return;
             } else {
+                pmix_output(0, "JJH (%s:%d in %s()) Error condition (rc=%d -- PMIX_ERR_UNREACH... (A))",
+                            __FILE__, __LINE__, __FUNCTION__, rc);
                 // report the error
                 event_del(&peer->send_event);
                 peer->send_ev_active = false;
@@ -294,8 +304,13 @@ void pmix_usock_send_handler(int sd, short flags, void *cbdata)
                 /* exit this event and let the event lib progress */
                 pmix_output_verbose(2, pmix_globals.debug_output,
                                     "usock:send_handler RES BUSY OR WOULD BLOCK");
+                pmix_output(0, "JJH (%s:%d in %s()) Error condition (rc=%d %s)",
+                            __FILE__, __LINE__, __FUNCTION__, rc,
+                            (rc == PMIX_ERR_RESOURCE_BUSY ? "Busy" : "Block") );
                 return;
             } else {
+                pmix_output(0, "JJH (%s:%d in %s()) Error condition (rc=%d -- PMIX_ERR_UNREACH... (A))",
+                            __FILE__, __LINE__, __FUNCTION__, rc);
                 // report the error
                 pmix_output(0, "pmix_usock_peer_send_handler: unable to send message ON SOCKET %d",
                             peer->sd);
@@ -415,6 +430,7 @@ void pmix_usock_recv_handler(int sd, short flags, void *cbdata)
                                 (int)peer->recv_msg->hdr.nbytes,
                                 peer->recv_msg->hdr.tag, peer->sd);
             /* post it for delivery */
+            MB(); // JJH
             PMIX_ACTIVATE_POST_MSG(peer->recv_msg);
             peer->recv_msg = NULL;
             return;
@@ -423,6 +439,9 @@ void pmix_usock_recv_handler(int sd, short flags, void *cbdata)
             /* exit this event and let the event lib progress */
             return;
         } else {
+            pmix_output(0, "JJH (%s:%d in %s()) Error condition (rc=%d -- other)",
+                        __FILE__, __LINE__, __FUNCTION__, rc);
+
             /* the remote peer closed the connection - report that condition
              * and let the caller know
              */
@@ -431,6 +450,7 @@ void pmix_usock_recv_handler(int sd, short flags, void *cbdata)
             goto err_close;
         }
     }
+    MB(); // JJH
     /* success */
     return;
  err_close:
@@ -530,9 +550,11 @@ void pmix_usock_process_msg(int fd, short flags, void *cbdata)
                     buf.pack_ptr = ((char*)buf.base_ptr) + buf.bytes_used;
                 }
                 msg->data = NULL;  // protect the data region
+                MB(); // JJH Here we deliver the data...
                 if (NULL != rcv->cbfunc) {
                     rcv->cbfunc(msg->peer, &msg->hdr, &buf, rcv->cbdata);
                 }
+                MB();
                 PMIX_DESTRUCT(&buf);  // free's the msg data
                 /* also done with the recv, if not a wildcard or the error tag */
                 if (UINT32_MAX != rcv->tag && 0 != rcv->tag) {
