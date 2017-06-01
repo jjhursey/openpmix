@@ -41,6 +41,8 @@
 #include <stdint.h>
 #endif
 
+#include <pthread.h>
+
 #include "src/class/pmix_list.h"
 
 #include <pmix/pmix_common.h>
@@ -57,6 +59,7 @@ struct pmix_hash_table_t
     size_t              ht_table_size;  /**< size of table */
     size_t              ht_size;        /**< number of values on table */
     size_t              ht_mask;
+pthread_mutex_t lock; // JJH Protect me from monsters...
 };
 typedef struct pmix_hash_table_t pmix_hash_table_t;
 

@@ -186,10 +186,14 @@ static void job_data(struct pmix_peer_t *pr, pmix_usock_hdr_t *hdr,
         PMIX_ERROR_LOG(rc);
         return;
     }
+     MB(); // JJH
     /* decode it */
 #if !(defined(PMIX_ENABLE_DSTORE) && (PMIX_ENABLE_DSTORE == 1))
-        pmix_job_data_htable_store(nspace, buf);
+    pmix_job_data_htable_store(nspace, buf);
 #endif
+    // Memory barrier
+    MB(); // JJH
+    //usleep(((pmix_client_globals.myserver.info->rank) % 100) * 1000);
     cb->status = PMIX_SUCCESS;
     cb->active = false;
 }
@@ -232,6 +236,7 @@ static pmix_status_t connect_to_server(struct sockaddr_un *address, void *cbdata
         PMIX_RELEASE(req);
         return ret;
     }
+    //usleep(((pmix_client_globals.myserver.info->rank) % 100) * 1000);
     PMIX_ACTIVATE_SEND_RECV(&pmix_client_globals.myserver, req, job_data, cbdata);
 
     return PMIX_SUCCESS;
@@ -409,6 +414,7 @@ PMIX_EXPORT pmix_status_t PMIx_Init(pmix_proc_t *proc)
         return rc;
     }
     PMIX_WAIT_FOR_COMPLETION(cb.active);
+    MB(); // JJH
     rc = cb.status;
     PMIX_DESTRUCT(&cb);
 
@@ -1076,8 +1082,9 @@ static pmix_status_t recv_connect_ack(int sd)
         if (connect(sd, addr, addrlen) < 0) {
             if (pmix_socket_errno == ETIMEDOUT) {
                 /* The server may be too busy to accept new connections */
-                pmix_output_verbose(2, pmix_globals.debug_output,
-                                    "timeout connecting to server");
+                pmix_output_verbose(1, pmix_globals.debug_output,
+                                    "timeout connecting to server %s (%d)",
+                                    strerror(pmix_socket_errno), pmix_socket_errno);
                 CLOSE_THE_SOCKET(sd);
                 continue;
             }
@@ -1088,12 +1095,13 @@ static pmix_status_t recv_connect_ack(int sd)
                connection.  Handle that case in a semi-rational
                way by trying twice before giving up */
             if (ECONNABORTED == pmix_socket_errno) {
-                pmix_output_verbose(2, pmix_globals.debug_output,
-                                    "connection to server aborted by OS - retrying");
+                pmix_output_verbose(1, pmix_globals.debug_output,
+                                    "connection to server aborted by OS - retrying %s (%d)",
+                                    strerror(pmix_socket_errno), pmix_socket_errno);
                 CLOSE_THE_SOCKET(sd);
                 continue;
             } else {
-                pmix_output_verbose(2, pmix_globals.debug_output,
+                pmix_output_verbose(1, pmix_globals.debug_output,
                                     "Connect failed: %s (%d)", strerror(pmix_socket_errno),
                                     pmix_socket_errno);
                 CLOSE_THE_SOCKET(sd);
@@ -1106,6 +1114,7 @@ static pmix_status_t recv_connect_ack(int sd)
     }
 
     if (retries == PMIX_MAX_RETRIES || sd < 0){
+        pmix_output(0, "JJH ERROR: Connection failed after %d retries!", retries);
         /* We were unsuccessful in establishing this connection, and are
          * not likely to suddenly become successful */
         if (0 <= sd) {
@@ -1116,12 +1125,14 @@ static pmix_status_t recv_connect_ack(int sd)
 
     /* send our identity and any authentication credentials to the server */
     if (PMIX_SUCCESS != (rc = send_connect_ack(sd))) {
+        pmix_output(0, "JJH ERROR: Failed sending auth to server!");
         CLOSE_THE_SOCKET(sd);
         return rc;
     }
 
     /* do whatever handshake is required */
     if (PMIX_SUCCESS != (rc = recv_connect_ack(sd))) {
+        pmix_output(0, "JJH ERROR: Failed handshake with server!");
         CLOSE_THE_SOCKET(sd);
         return rc;
     }

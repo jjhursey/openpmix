@@ -609,6 +609,7 @@ static void _register_nspace(int sd, short args, void *cbdata)
 #endif
 
  release:
+    MB(); // JJH
     if (NULL != nodes) {
         pmix_argv_free(nodes);
     }
@@ -1118,11 +1119,11 @@ static void _dmodex_req(int sd, short args, void *cbdata)
      * may not be a contribution */
     if (PMIX_SUCCESS == (rc = pmix_hash_fetch(&nptr->server->myremote, info->rank, "modex", &val)) &&
         NULL != val) {
-    data = val->data.bo.bytes;
-    sz = val->data.bo.size;
-    /* protect the data */
-    val->data.bo.bytes = NULL;
-    val->data.bo.size = 0;
+        data = val->data.bo.bytes;
+        sz = val->data.bo.size;
+        /* protect the data */
+        val->data.bo.bytes = NULL;
+        val->data.bo.size = 0;
         PMIX_VALUE_RELEASE(val);
     }
 
@@ -1454,11 +1455,14 @@ static void _store_internal(int sd, short args, void *cbdata)
         }
     }
     if (NULL == ns) {
+        pmix_output(0, "%s:%d in %s() : JJH Error: Failed to find the namespace - should never happen",
+                    __FILE__, __LINE__, __FUNCTION__);
         /* shouldn't be possible */
         cd->status = PMIX_ERR_NOT_FOUND;
     } else {
         cd->status = pmix_hash_store(&ns->internal, cd->rank, cd->kv);
     }
+    MB(); // JJH
     cd->active = false;
  }
 
@@ -1898,6 +1902,8 @@ static void _spcb(int sd, short args, void *cbdata)
             }
         }
         if (NULL == nptr) {
+            pmix_output(0, "%s:%d in %s() : JJH Error: Failed to find the namespace - should never happen",
+                        __FILE__, __LINE__, __FUNCTION__);
             /* shouldn't happen */
             PMIX_ERROR_LOG(PMIX_ERR_NOT_FOUND);
         } else {
@@ -2404,6 +2410,7 @@ static pmix_status_t server_switchyard(pmix_peer_t *peer, uint32_t tag,
 
     if (PMIX_REQ_CMD == cmd) {
         reply = PMIX_NEW(pmix_buffer_t);
+        MB(); // JJH
 #if defined(PMIX_ENABLE_DSTORE) && (PMIX_ENABLE_DSTORE == 1)
         char *msg = peer->info->nptr->nspace;
         if (PMIX_SUCCESS != (rc = pmix_bfrop.pack(reply, &msg, 1, PMIX_STRING))) {
@@ -2414,6 +2421,7 @@ static pmix_status_t server_switchyard(pmix_peer_t *peer, uint32_t tag,
         pmix_bfrop.copy_payload(reply, &(peer->info->nptr->server->job_info));
         pmix_bfrop.copy_payload(reply, &(pmix_server_globals.gdata));
 #endif
+        MB(); // JJH
         PMIX_SERVER_QUEUE_REPLY(peer, tag, reply);
         return PMIX_SUCCESS;
     }

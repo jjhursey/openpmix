@@ -264,6 +264,8 @@ static void cbcon(pmix_cb_t *p)
 {
     p->active = false;
     p->checked = false;
+    p->status = PMIX_ERROR_MIN-1;
+    p->pstatus = PMIX_ERROR_MIN-1;
     PMIX_CONSTRUCT(&p->data, pmix_buffer_t);
     p->cbfunc = NULL;
     p->op_cbfunc = NULL;
