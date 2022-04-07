@@ -380,11 +380,20 @@ PMIX_EXPORT extern int pmix_bfrops_base_output;
                             __FILE__, __LINE__, (p)->nptr->compat.bfrops->version,           \
                             PMIx_Data_type_string(t));                                      \
         if (PMIX_BFROP_BUFFER_UNDEF == (b)->type) {                                          \
+        pmix_output_verbose(20, pmix_bfrops_base_output, "[%s:%d] PACK version %s type %s : JJH HERE 1", \
+                            __FILE__, __LINE__, (p)->nptr->compat.bfrops->version, \
+                            PMIx_Data_type_string(t));                  \
             (b)->type = (p)->nptr->compat.type;                                              \
             (r) = (p)->nptr->compat.bfrops->pack(b, s, n, t);                                \
         } else if ((b)->type == (p)->nptr->compat.type) {                                    \
+            pmix_output_verbose(20, pmix_bfrops_base_output, "[%s:%d] PACK version %s type %s : JJH HERE 2", \
+                                __FILE__, __LINE__, (p)->nptr->compat.bfrops->version, \
+                                PMIx_Data_type_string(t));              \
             (r) = (p)->nptr->compat.bfrops->pack(b, s, n, t);                                \
         } else {                                                                             \
+            pmix_output_verbose(20, pmix_bfrops_base_output, "[%s:%d] PACK version %s type %s : JJH HERE 3 (type %d vs %d) (vs compat %d)", \
+                                __FILE__, __LINE__, (p)->nptr->compat.bfrops->version, \
+                                PMIx_Data_type_string(t), PMIX_BFROP_BUFFER_UNDEF, (b)->type, (p)->nptr->compat.type); \
             (r) = PMIX_ERR_PACK_MISMATCH;                                                    \
         }                                                                                    \
     } while (0)
