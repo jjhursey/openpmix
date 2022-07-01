@@ -991,4 +991,4 @@ PMIx autogen: completed successfully.  w00t!
 ================================================\n\n";
 
 # Done!
-exit(0);
+exit(1);
